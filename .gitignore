@@ -1,0 +1,5 @@
+*.o
+/min
+/min_sdl
+/min_sdl_parse
+.*.swp
