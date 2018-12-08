@@ -147,7 +147,10 @@ int main(int argc, const char *argv[])
         // when the stream is a video we store its index, codec parameters and codec
         if (pLocalCodecParameters->codec_type == AVMEDIA_TYPE_VIDEO) {
             video_stream_index = i;
+#if 0
             pCodec = pLocalCodec;
+#endif
+            pCodec = avcodec_find_decoder(codec_id);
             pCodecParameters = pLocalCodecParameters;
 
             logging("Video Codec: resolution %d x %d", pLocalCodecParameters->width, pLocalCodecParameters->height);
@@ -168,11 +171,16 @@ int main(int argc, const char *argv[])
 
     // Fill the codec context based on the values from the supplied codec parameters
     // https://ffmpeg.org/doxygen/trunk/group__lavc__core.html#gac7b282f51540ca7a99416a3ba6ee0d16
+#if 0
     if (avcodec_parameters_to_context(pCodecContext, pCodecParameters) < 0)
     {
         logging("failed to copy codec params to codec context");
         return -1;
     }
+#endif
+    pCodecContext->width = pCodecParameters->width;
+    pCodecContext->height = pCodecParameters->height;
+    pCodecContext->pix_fmt = AV_PIX_FMT_YUV420P;
 
     // Initialize the AVCodecContext to use the given AVCodec.
     // https://ffmpeg.org/doxygen/trunk/group__lavc__core.html#ga11f785a188d7d9df71621001465b0f1d
