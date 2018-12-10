@@ -30,6 +30,9 @@
 static volatile int thread_exit = 0;
 static volatile int thread_pause = 0;
 
+static void save_yuv420(AVFrame *pFrame, int height, const char *filename);
+static void save_yuv420_into(AVFrame *pFrame, int height, FILE *f);
+
 static int sfp_refresh_thread(void *opaque) {
     while (!thread_exit) {
         if (!thread_pause) {
@@ -54,8 +57,11 @@ static void logging(const char *fmt, ...);
 // decode packets into frames
 static int decode_packet(AVPacket *pPacket, AVCodecContext *pCodecContext, AVFrame *pFrame);
 
+static FILE *fout = NULL;
+
 int main(int argc, const char *argv[])
 {
+    fout = fopen("frames.yuv420","w");
     logging("initializing all the containers, codecs and protocols.");
 
     // AVFormatContext holds the header information from the format (Container)
@@ -247,6 +253,10 @@ int main(int argc, const char *argv[])
                     }
                     av_frame_unref(pFrame);
 
+                    //char frame_filename[1024];
+                    //snprintf(frame_filename, sizeof(frame_filename), "%s-%d.yuv420", "frame", pCodecContext->frame_number);
+                    save_yuv420_into(pFrameYUV, pCodecContext->height, fout);
+
                     SDL_UpdateTexture(sdlTexture, NULL, pFrameYUV->data[0], pFrameYUV->linesize[0]);
                     SDL_RenderClear(sdlRenderer);
                     SDL_RenderCopy(sdlRenderer, sdlTexture, &sdlRect, NULL);
@@ -295,6 +305,8 @@ int main(int argc, const char *argv[])
     av_packet_free(&pPacket);
     av_frame_free(&pFrame);
     avcodec_free_context(&pCodecContext);
+
+    fclose(fout);
     return 0;
 }
 
@@ -357,4 +369,25 @@ static void render_frame(struct SwsContext *pSwsCtx, AVCodecContext *pCodecCtx,
     SDL_RenderClear(sdlRenderer);
     SDL_RenderCopy(sdlRenderer, sdlTexture, &sdlRect, NULL);
     SDL_RenderPresent(sdlRenderer);
+}
+
+static void save_yuv420(AVFrame *pFrame, int height, const char *filename)
+{
+    FILE *f;
+    f = fopen(filename,"w");
+
+    fwrite(pFrame->data[0], 1, pFrame->linesize[0]*height, f);
+    fwrite(pFrame->data[1], 1, pFrame->linesize[1]*height / 2, f);
+    fwrite(pFrame->data[2], 1, pFrame->linesize[2]*height / 2, f);
+
+    fclose(f);
+}
+
+static void save_yuv420_into(AVFrame *pFrame, int height, FILE *f)
+{
+
+    fwrite(pFrame->data[0], 1, pFrame->linesize[0]*height, f);
+    fwrite(pFrame->data[1], 1, pFrame->linesize[1]*height / 2, f);
+    fwrite(pFrame->data[2], 1, pFrame->linesize[2]*height / 2, f);
+
 }
